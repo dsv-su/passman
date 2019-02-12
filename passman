@@ -102,7 +102,7 @@ function menu {
 	read -p 'passman> ' action
 
 	case "$action" in
-	    quit|q )
+	    quit|q|'exit' )
 		exit 0
 		;;
 	    "help" )

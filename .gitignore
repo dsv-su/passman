@@ -5,6 +5,6 @@ group/*
 pass
 pass/*
 *~
-settings
+config
 passfile
 /.ssh
