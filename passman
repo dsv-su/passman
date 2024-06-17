@@ -16,7 +16,7 @@ UNAME=$SUDO_USER
 UTOKEN=""
 ATOKEN=""
 
-EDITOR="editor"
+EDITOR="${EDITOR:-editor}"
 
 . "$API"
 . "$CONFIG"
