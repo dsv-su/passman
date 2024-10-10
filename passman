@@ -27,7 +27,7 @@ then
     then
 	touch "$HOME"/.passman_history
 	export RLWRAP_RUNNING=1
-	exec rlwrap -C passman -b '' \
+	exec rlwrap -C passman \
 	    -z ./completion.pm \
 	    "$realbin" "$@"
     else
