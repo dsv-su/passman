@@ -21,6 +21,11 @@ then
     die 'ccrypt not found. Please install it and make sure it is available in $PATH.' 2
 fi
 
+if ! which pwgen &>/dev/null
+then
+    die 'pwgen not found. Please install it and make sure it is available in $PATH.' 2
+fi
+
 if [ -h /usr/local/bin/$BINNAME ]
 then
     die "/usr/local/bin/$BINNAME already exists, please choose a different name." 3
