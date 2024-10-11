@@ -25,13 +25,13 @@ if [ ! "$(id -un)" = "$APPUSER" ]
 then
     if which rlwrap >/dev/null && [ -z "$RLWRAP_RUNNING" ]
     then
-	touch "$HOME"/.passman_history
-	export RLWRAP_RUNNING=1
-	exec rlwrap -C passman \
-	    -z ./completion.pm \
-	    "$realbin" "$@"
+        touch "$HOME"/.passman_history
+        export RLWRAP_RUNNING=1
+        exec rlwrap -C passman \
+            -z ./completion.pm \
+            "$realbin" "$@"
     else
-	exec sudo -u "$APPUSER" "$realbin" "$@"
+        exec sudo -u "$APPUSER" "$realbin" "$@"
     fi
 fi
 
@@ -39,13 +39,13 @@ fi
 function assist {
     if [ -z "$1" ]
     then
-	cat help/passman
+        cat help/passman
     else
-	if ! cat help/"$1" 2>/dev/null
-	then
-	    echo "That is not a command."
-	    return 1
-	fi
+        if ! cat help/"$1" 2>/dev/null
+        then
+            echo "That is not a command."
+            return 1
+        fi
     fi
     echo
     return 0
@@ -54,39 +54,39 @@ function assist {
 function validate {
     if [ -z "$UTOKEN" ]
     then
-	read -sp "${UNAME}'s Password: " pw
-	echo
-	UTOKEN=$(get-user-token "$UNAME" "$pw")
-	local result=$?
-	unset pw
-	if [ "$result" != "0" ]
-	then
-	    echo "Password incorrect."
-	fi
-	return "$result"
+        read -sp "${UNAME}'s Password: " pw
+        echo
+        UTOKEN=$(get-user-token "$UNAME" "$pw")
+        local result=$?
+        unset pw
+        if [ "$result" != "0" ]
+        then
+            echo "Password incorrect."
+        fi
+        return "$result"
     fi
 }
 
 function validate-admin {
     if [ -n "$ATOKEN" ]
     then
-	return 0
+        return 0
     fi
 
     local admin group
     admin=''
     for group in $(list-user-groups "$UNAME")
     do
-	if [ "$group" = "admin" ]
-	then
-	    admin=1
-	    break
-	fi
+        if [ "$group" = "admin" ]
+        then
+            admin=1
+            break
+        fi
     done
     if [ -z "$admin" ]
     then
-	echo "You are not an administrator."
-	return "$E_PRIVILEGE"
+        echo "You are not an administrator."
+        return "$E_PRIVILEGE"
     fi
     validate
     ATOKEN=$(get-admin-token "$UNAME" "$UTOKEN")
@@ -98,42 +98,42 @@ function menu {
 
     while true
     do
-	trap 'rm -f tmp-*; echo' exit
-	read -p 'passman> ' action
+        trap 'rm -f tmp-*; echo' exit
+        read -p 'passman> ' action
 
-	case "$action" in
-	    quit|q|'exit' )
-		exit 0
-		;;
-	    "help" )
-		assist
-		;;
-	    * )
-		execute $action || true
-		;;
-	esac
+        case "$action" in
+            quit|q|'exit' )
+                exit 0
+                ;;
+            "help" )
+                assist
+                ;;
+            * )
+                execute $action || true
+                ;;
+        esac
     done
 }
 
 function execute {
     if ! echo "$*" | grep -E \
-	-e "^$" \
-	-e "^get $LEGAL_CHARS+$" \
-	-e "^passwd$" \
+        -e "^$" \
+        -e "^get $LEGAL_CHARS+$" \
+        -e "^passwd$" \
         -e "^list (user|group|pass).*$" \
-	-e "^info (user|group|pass) $LEGAL_CHARS+$" \
+        -e "^info (user|group|pass) $LEGAL_CHARS+$" \
         -e "^manage (user|pass) $LEGAL_CHARS+ [+-]$LEGAL_CHARS+$" \
-	-e "^modify $LEGAL_CHARS" \
+        -e "^modify $LEGAL_CHARS" \
         -e "^add (user|group|pass) $LEGAL_CHARS+$" \
         -e "^del (user|group|pass) $LEGAL_CHARS+$" \
         -e "^(promote|demote) $LEGAL_CHARS+$" \
-	-e "^help $LEGAL_CHARS+$" \
-	2>&1 >/dev/null
+        -e "^help $LEGAL_CHARS+$" \
+        2>&1 >/dev/null
     then
-	assist
-	return 1
+        assist
+        return 1
     fi
-    
+
     local action="$1"
     shift
 
@@ -144,265 +144,264 @@ function execute {
     local result=""
 
     case "$action" in
-	get )
-	    if ! list-passwords | grep -q "^$1$"
-	    then
-		echo "Password '$1' doesn't exist."
-		return 1
-	    fi
-	    validate || return $?
-	    if ! show-pass "$UNAME" "$UTOKEN" "$1"
-	    then 
-		echo "$UNAME cannot access $1."
-		return 1
-	    fi
-	    return 0
-	    ;;
-	list )
-	    type=""
-	    case "$1" in
-		user )
-		    type="users"
-		    ;;
-		group )
-		    type="groups"
-		    ;;
-		pass )
-		    type="passwords"
-		    ;;
-		* )
-		    assist
-		    return $?
-		    ;;
-	    esac
-	    local regex="$2"
-	    
-	    printf "%s\n" "$(list-"$type" | tr ' ' '\n' | grep -E "$regex")"
-	    return 0
-	    ;;
-	
-	info )
-	    case "$1" in
-		user )
-		    name="$2"
-		    
-		    echo
-		    echo "$name is in the following groups:"
-		    list-user-groups "$name"
-		    echo
-		    echo "$name can access the following passwords:"
-		    list-available "$name"
-		    echo
-		    return 0
-		    ;;
-		group )
-		    name="$2"
-		    
-		    echo
-		    echo "$name has the following members:"
-		    list-group-users "$name"
-		    echo
-		    echo "$name contains the following passwords:"
-		    list-group-passes "$name"
-		    echo
-		    return 0
-		    ;;
-		pass )
-		    name="$2"
-		    
-		    echo "$name belongs to the following groups:"
-		    list-password-groups "$name"
-		    return 0
-		    ;;
-		* )
-		    assist
-		    return $?
-		    ;;
-	    esac
-	    ;;
-	manage )
-	    validate-admin || return $?
-	    type="$1"
-	    name="$2"
-	    action="${3:0:1}"
-	    group="${3:1}"
-	    local message=""
-	    
-	    case "$action" in
-		"+" )
-		    action="map"
-		    message="added to"
-		    ;;
-		"-" )
-		    action="unmap"
-		    message="removed from"
-		    ;;
-		* )
-		    assist
-		    return $?
-	    esac
-	    
-	    ${action}-${type}-group "$ATOKEN" "$name" "$group"
-	    local result=$?
-	    case "$result" in
-		"0" )
-		    echo "'$name' successfully $message '$group'."
-		    ;;
-		"$E_PRIVILEGE" )
-		    echo "You cannot add/remove people from the admin group with this command."
-		    ;;
-		"$E_CONFLICT" )
-		    echo "'$name' is already in '$group'."
-		    ;;
-		* )
-		    echo "An error occurred."
-		    ;;
-	    esac
-	    return "$result"
-	    ;;
-	add|del )
-	    validate-admin || return $?
-	    type="$1"
-	    name="$2"
-	    local message=""
-	    case "$action" in
-		"add" )
-		    case "$type" in
-			user )
-			    local pass1=""
-			    local pass2=""
+        get )
+            if ! list-passwords | grep -q "^$1$"
+            then
+                echo "Password '$1' doesn't exist."
+                return 1
+            fi
+            validate || return $?
+            if ! show-pass "$UNAME" "$UTOKEN" "$1"
+            then
+                echo "$UNAME cannot access $1."
+                return 1
+            fi
+            return 0
+            ;;
+        list )
+            type=""
+            case "$1" in
+                user )
+                    type="users"
+                    ;;
+                group )
+                    type="groups"
+                    ;;
+                pass )
+                    type="passwords"
+                    ;;
+                * )
+                    assist
+                    return $?
+                    ;;
+            esac
+            local regex="$2"
 
-			    read -sp "Choose a password: " pass1
-			    echo
-			    read -sp "Retype password: " pass2
-			    echo
+            printf "%s\n" "$(list-"$type" | tr ' ' '\n' | grep -E "$regex")"
+            return 0
+            ;;
+        info )
+            case "$1" in
+                user )
+                    name="$2"
 
-			    if [ "$pass1" = "$pass2" ]
-			    then
-				pass="$pass1"
-			    else
-				echo "Passwords do not match. User not added."
-				return 1
-			    fi
-			    ;;
-			pass )
-			    tmpfile="tmp-$(date +%y%m%d%H%M%S)"
-			    trap "rm -f $tmpfile" EXIT
-			    touch "$tmpfile"
-			    chmod 600 "$tmpfile"
-			    
-			    "$EDITOR" "$tmpfile"
-			    
-			    if [ -s "$tmpfile" ]
-			    then
-				echo -e '\n' >> "$tmpfile"
-				pass=$(cat "$tmpfile")
-				rm "$tmpfile"
-			    else
-				echo "No password data given, not doing anything."
-				return 1
-			    fi
- 			    ;;
-			group )
-			    pass=""
-			    ;;
-		    esac
-		    ;;
-		"del" )
-		    action="remove"
-		    ;;
-	    esac
-	    
-	    ${action}"-"$type "$ATOKEN" "$name" "$pass"
-	    echo -n "$type '$name' successfully "
-	    if [ "$action" = "add" ]
-	    then 
-		echo "added." 
-	    else
-		echo "removed."
-	    fi
-	    return $?
-	    ;;
-	modify )
-	    validate-admin || return $?
-	    local pname="$1"
+                    echo
+                    echo "$name is in the following groups:"
+                    list-user-groups "$name"
+                    echo
+                    echo "$name can access the following passwords:"
+                    list-available "$name"
+                    echo
+                    return 0
+                    ;;
+                group )
+                    name="$2"
 
-	    tmpfile="tmp-$(date +%y%m%d%H%M%S)"
-	    trap "rm -f $tmpfile" EXIT
-	    touch "$tmpfile"
-	    chmod 600 "$tmpfile"
-	    show-pass "$UNAME" "$UTOKEN" "$pname" > "$tmpfile"
+                    echo
+                    echo "$name has the following members:"
+                    list-group-users "$name"
+                    echo
+                    echo "$name contains the following passwords:"
+                    list-group-passes "$name"
+                    echo
+                    return 0
+                    ;;
+                pass )
+                    name="$2"
 
-	    "$EDITOR" "$tmpfile"
-	    
-	    if [ -s "$tmpfile" ]
-	    then
-		echo -e '\n' >> "$tmpfile"
-		pass=$(cat "$tmpfile")
-		rm "$tmpfile"*
-	    else
-		echo "No password data given, not doing anything."
-		rm "$tmpfile"*
-		return 1
-	    fi
-	    
-	    modify-pass "$ATOKEN" "$pname" "$pass"
-	    echo "Pass '$pname' successfully updated."
-	    return 0
-	    ;;
-	passwd )
-	    validate || return $?
-	    local pass1=""
-	    local pass2=""
+                    echo "$name belongs to the following groups:"
+                    list-password-groups "$name"
+                    return 0
+                    ;;
+                * )
+                    assist
+                    return $?
+                    ;;
+            esac
+            ;;
+        manage )
+            validate-admin || return $?
+            type="$1"
+            name="$2"
+            action="${3:0:1}"
+            group="${3:1}"
+            local message=""
 
-	    read -sp "New password: " pass1
-	    echo
-	    read -sp "Retype password: " pass2
-	    echo
+            case "$action" in
+                "+" )
+                    action="map"
+                    message="added to"
+                    ;;
+                "-" )
+                    action="unmap"
+                    message="removed from"
+                    ;;
+                * )
+                    assist
+                    return $?
+            esac
 
-	    if [ "$pass1" = "$pass2" ]
-	    then 
-		change-user-pass "$UTOKEN" "$UNAME" "$pass1"
-	    fi
-	    result=$?
+            ${action}-${type}-group "$ATOKEN" "$name" "$group"
+            local result=$?
+            case "$result" in
+                "0" )
+                    echo "'$name' successfully $message '$group'."
+                    ;;
+                "$E_PRIVILEGE" )
+                    echo "You cannot add/remove people from the admin group with this command."
+                    ;;
+                "$E_CONFLICT" )
+                    echo "'$name' is already in '$group'."
+                    ;;
+                * )
+                    echo "An error occurred."
+                    ;;
+            esac
+            return "$result"
+            ;;
+        add|del )
+            validate-admin || return $?
+            type="$1"
+            name="$2"
+            local message=""
+            case "$action" in
+                "add" )
+                    case "$type" in
+                        user )
+                            local pass1=""
+                            local pass2=""
 
-	    unset pass1
-	    unset pass2
-	    
-	    if [ "$result" = "0" ] 
-	    then
-		echo "Your password has been changed."
-	    fi
-	    return "$result"
-	    ;;
-	promote )
-	    validate-admin || return $?
-	    name=$1
-	    make-user-admin "$ATOKEN" "$name"
-	    echo "'$name' is now an administrator."
-	    return 0
-	    ;;
-	demote )
-	    name="$1"
-	    if [ "$name" == "$UNAME" ]
-	    then
-		echo "You cannot demote yourself, not doing anything."
-		return 1
-	    fi
-	    validate-admin || return $?
-	    unmake-user-admin "$ATOKEN" "$name"
-	    echo "'$name' is no longer an administrator."
-	    return $?
-	    ;;
-	'help' )
-	    assist "$1"
-	    ;;
-	"" )
-	    return 0
-	    ;;
-	* )
-	    assist
-	    return $?
+                            read -sp "Choose a password: " pass1
+                            echo
+                            read -sp "Retype password: " pass2
+                            echo
+
+                            if [ "$pass1" = "$pass2" ]
+                            then
+                                pass="$pass1"
+                            else
+                                echo "Passwords do not match. User not added."
+                                return 1
+                            fi
+                            ;;
+                        pass )
+                            tmpfile="tmp-$(date +%y%m%d%H%M%S)"
+                            trap "rm -f $tmpfile" EXIT
+                            touch "$tmpfile"
+                            chmod 600 "$tmpfile"
+
+                            "$EDITOR" "$tmpfile"
+
+                            if [ -s "$tmpfile" ]
+                            then
+                                echo -e '\n' >> "$tmpfile"
+                                pass=$(cat "$tmpfile")
+                                rm "$tmpfile"
+                            else
+                                echo "No password data given, not doing anything."
+                                return 1
+                            fi
+                             ;;
+                        group )
+                            pass=""
+                            ;;
+                    esac
+                    ;;
+                "del" )
+                    action="remove"
+                    ;;
+            esac
+
+            ${action}"-"$type "$ATOKEN" "$name" "$pass"
+            echo -n "$type '$name' successfully "
+            if [ "$action" = "add" ]
+            then
+                echo "added."
+            else
+                echo "removed."
+            fi
+            return $?
+            ;;
+        modify )
+            validate-admin || return $?
+            local pname="$1"
+
+            tmpfile="tmp-$(date +%y%m%d%H%M%S)"
+            trap "rm -f $tmpfile" EXIT
+            touch "$tmpfile"
+            chmod 600 "$tmpfile"
+            show-pass "$UNAME" "$UTOKEN" "$pname" > "$tmpfile"
+
+            "$EDITOR" "$tmpfile"
+
+            if [ -s "$tmpfile" ]
+            then
+                echo -e '\n' >> "$tmpfile"
+                pass=$(cat "$tmpfile")
+                rm "$tmpfile"*
+            else
+                echo "No password data given, not doing anything."
+                rm "$tmpfile"*
+                return 1
+            fi
+
+            modify-pass "$ATOKEN" "$pname" "$pass"
+            echo "Pass '$pname' successfully updated."
+            return 0
+            ;;
+        passwd )
+            validate || return $?
+            local pass1=""
+            local pass2=""
+
+            read -sp "New password: " pass1
+            echo
+            read -sp "Retype password: " pass2
+            echo
+
+            if [ "$pass1" = "$pass2" ]
+            then
+                change-user-pass "$UTOKEN" "$UNAME" "$pass1"
+            fi
+            result=$?
+
+            unset pass1
+            unset pass2
+
+            if [ "$result" = "0" ]
+            then
+                echo "Your password has been changed."
+            fi
+            return "$result"
+            ;;
+        promote )
+            validate-admin || return $?
+            name=$1
+            make-user-admin "$ATOKEN" "$name"
+            echo "'$name' is now an administrator."
+            return 0
+            ;;
+        demote )
+            name="$1"
+            if [ "$name" == "$UNAME" ]
+            then
+                echo "You cannot demote yourself, not doing anything."
+                return 1
+            fi
+            validate-admin || return $?
+            unmake-user-admin "$ATOKEN" "$name"
+            echo "'$name' is no longer an administrator."
+            return $?
+            ;;
+        'help' )
+            assist "$1"
+            ;;
+        "" )
+            return 0
+            ;;
+        * )
+            assist
+            return $?
     esac
 }
 
@@ -412,27 +411,27 @@ do
     var=${1:1}
     shift
     case "$var" in
-	u )
-	    UNAME="$1"
-	    shift
-	    ;;
-	e )
-	    EDITOR="$1"
-	    shift
-	    ;;
-	* )
-	    assist
-	    exit $?
-	    ;;
+        u )
+            UNAME="$1"
+            shift
+            ;;
+        e )
+            EDITOR="$1"
+            shift
+            ;;
+        * )
+            assist
+            exit $?
+            ;;
     esac
 done
 
 # choose interactive mode if no further arguments
 case "$1" in
     "" )
-	menu
-	;;
+        menu
+        ;;
     * )
-	execute "$@"
-	;;
+        execute "$@"
+        ;;
 esac

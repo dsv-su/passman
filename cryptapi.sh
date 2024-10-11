@@ -18,18 +18,18 @@ function bootstrap {
     local count=0
     for i in user group pass
     do
-	[ -e $i ] && (( count++ ))
+        [ -e $i ] && (( count++ ))
     done
-    
+
     if [ "$count" = 3 ] && [ -e group/admin.* ]
     then
-	echo "passman seems to be bootstrapped already, not doing anything."
-	return $E_CONFLICT
+        echo "passman seems to be bootstrapped already, not doing anything."
+        return $E_CONFLICT
 
     elif [ ! "$count" = 0 ]
     then
-	echo "passman seems to be in an inconsistent state, please clean up before trying to bootstrap."
-	return $E_GENERAL
+        echo "passman seems to be in an inconsistent state, please clean up before trying to bootstrap."
+        return $E_GENERAL
     fi
 
     mkdir user
@@ -53,7 +53,7 @@ function get-user-token {
 # prints the token associated with '$1' by decrypting the file 
 # user/'$1' with '$2'
 # if the decryption encounters an error, its error code is returned
-    
+
     decrypt user/"$uname" "$pass"
 }
 
@@ -90,7 +90,7 @@ function decrypt {
     local pass="$2"
 # tries to decrypt and print '$1' using '$2'
 # if the decryption encounters an error, its error code is returned
-    
+
     export pass
     ccrypt -cq -E pass "$name" 2>/dev/null || return $E_VALIDATE
 }
@@ -104,7 +104,7 @@ function make-token {
 function list-user-groups {
     local uname="$1"
 # prints all groups that '$1' belongs to as a space-delimited list
-    
+
     local out=$(ls group/*.$uname 2>/dev/null | sed -r -e "s%^group/%%" -e "s%\.$uname$%%" | sort -u)
     printf "%s\n" "$out"
 }
@@ -113,7 +113,7 @@ function list-group-passes {
     local gname="$1"
 # prints all password files belonging to '$1' as a space-delimited list
 # does not decrypt any passwords
-    
+
     local out=$(ls pass/*.$gname 2>/dev/null | sed -r -e "s%^pass/%%" -e "s%\.$gname$%%" | sort -u)
     printf "%s\n" "$out"
 }
@@ -121,7 +121,7 @@ function list-group-passes {
 function list-password-groups {
     local pname="$1"
 # prints all the groups that '$1' belongs to as a space-delimited list
-    
+
     local out=$(ls pass/$pname.* 2>/dev/null | sed -r "s%^pass/$pname\.%%" | sort -u)
     printf "%s\n" "$out"
 }
@@ -161,7 +161,7 @@ function list-available {
 
     for gname in $groups
     do
-	passes=$(list-group-passes "$gname")' '"$passes"
+        passes=$(list-group-passes "$gname")' '"$passes"
     done
 
     local out=$(printf "%s" "$passes" | sort -u)
@@ -180,14 +180,14 @@ function show-pass {
 
     for group in $pgroups
     do
-	echo "$ugroups" | grep -q "$group"
-	if [ "$?" = "0" ]
-	then
-	    local gtoken=$(decrypt group/"$group"."$uname" "$utoken")
-	    
-	    decrypt pass/"$pname"."$group" "$gtoken"
-	    return $?
-	fi
+        echo "$ugroups" | grep -q "$group"
+        if [ "$?" = "0" ]
+        then
+            local gtoken=$(decrypt group/"$group"."$uname" "$utoken")
+
+            decrypt pass/"$pname"."$group" "$gtoken"
+            return $?
+        fi
     done
     return $E_PRIVILEGE
 }
@@ -215,13 +215,13 @@ function change-user-pass {
 # changes '$2's password to '$3', authenticating with '$1'
 # if the user does not belong to any groups, the password is changed without question
 # otherwise, the supplied '$1' is checked against one of the groups the user belongs to
-    
+
     local testfile=$(ls group/*."$uname" 2>/dev/null | tr '\n' ' ' | cut -d' ' -f1)
 
     [ -n "$testfile" ] && { decrypt "$testfile" "$utoken" &> /dev/null || return $E_VALIDATE; }
     rm user/"$uname"
     encrypt user/"$uname" "$newpass" "$utoken" || return $?
-	
+
 }
 
 function remove-user {
@@ -230,7 +230,7 @@ function remove-user {
 # removes '$2' from the system, given that '$1' is valid
 # also removes all group mappings for the user
 # returns an error if the user doesn't exist or '$1' is invalid
-    
+
     decrypt user/"$uname".admin "$admintoken" &> /dev/null|| return $E_VALIDATE
 
     rm user/"$uname"*
@@ -285,7 +285,7 @@ function unmap-user-group {
 
     [ "$gname" = "admin" ] && return $E_PRIVILEGE
     decrypt group/"$gname".admin "$admintoken" &> /dev/null || return $?
-    
+
     rm group/"$gname"."$uname"
 }
 
@@ -376,20 +376,20 @@ function modify-pass {
 
     for group in $(list-password-groups "$pname")
     do
-	rm pass/"$pname"."$group"
-	if [ "$group" == "admin" ]
-	then
-	    continue
-	fi
+        rm pass/"$pname"."$group"
+        if [ "$group" == "admin" ]
+        then
+            continue
+        fi
 
-	gtok=$(decrypt group/"$group".admin "$admintoken")
-	res=$?
-	[ -z "$gtok" ] && return "$res"
+        gtok=$(decrypt group/"$group".admin "$admintoken")
+        res=$?
+        [ -z "$gtok" ] && return "$res"
 
-	encrypt pass/"$pname"."$group" "$gtok" "$newpass"
+        encrypt pass/"$pname"."$group" "$gtok" "$newpass"
 
     done
-    
+
     encrypt pass/"$pname".admin "$admintoken" "$newpass"
     return $?
 }

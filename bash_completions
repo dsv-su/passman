@@ -4,11 +4,11 @@ __contains() {
     local value item
     value="$1"
     shift
-    
+
     for item in "$@"; do
-	if [ "$item" = "$value" ]; then
-	    return 0
-	fi
+        if [ "$item" = "$value" ]; then
+            return 0
+        fi
     done
     return 1
 }
@@ -17,10 +17,10 @@ __prepend() {
     local char list out
     char="$1"
     shift
-    
+
     out=''
     for item in "$@"; do
-	out="$out ${char}${item}"
+        out="$out ${char}${item}"
     done
     printf "%s" "$out"
 }
@@ -35,50 +35,50 @@ _passman() {
     completions=''
 
     if [ "$cur" = -* ]; then
-	completions="$switches"
+        completions="$switches"
     elif __contains "manage" "${COMP_WORDS[@]}"; then
-	case "$prev" in
-	    "manage" )
-		completions="user pass"
-		;;
-	    "user"|"pass" )
-		completions=$(passman list "$prev")
-		;;
-	    * )
-		local preprev initial
-		preprev="${COMP_WORDS[COMP_CWORD-2]}"
-		if [ "$preprev" = "user" ] || [ "$preprev" = "pass" ]; then
-		    initial=$(passman list group)
-		    completions="$(__prepend "+" $initial)"
-		    completions="$completions $(__prepend "-" $initial)"
-		fi
-		;;
-	esac
+        case "$prev" in
+            "manage" )
+                completions="user pass"
+                ;;
+            "user"|"pass" )
+                completions=$(passman list "$prev")
+                ;;
+            * )
+                local preprev initial
+                preprev="${COMP_WORDS[COMP_CWORD-2]}"
+                if [ "$preprev" = "user" ] || [ "$preprev" = "pass" ]; then
+                    initial=$(passman list group)
+                    completions="$(__prepend "+" $initial)"
+                    completions="$completions $(__prepend "-" $initial)"
+                fi
+                ;;
+        esac
     else
-	case "$prev" in
-	    "passman")
-		completions="$base $switches"
-		;;
-	    "help" )
-		if [ "${COMP_WORDS[1]}" = "help" ]; then
-		    completions="$base"
-		fi
-		;;
-	    "get"|"modify" )
-		completions=$(passman list pass)
-		;;
-	    "list"|"info"|"add"|"del" )
-		completions="user group pass"
-		;;
-	    "-u"|"promote"|"demote" )
-		completions=$(passman list user)
-		;;
-	    "user"|"group"|"pass" )
-		completions=$(passman list "$prev")
-		;;
-	esac
+        case "$prev" in
+            "passman")
+                completions="$base $switches"
+                ;;
+            "help" )
+                if [ "${COMP_WORDS[1]}" = "help" ]; then
+                    completions="$base"
+                fi
+                ;;
+            "get"|"modify" )
+                completions=$(passman list pass)
+                ;;
+            "list"|"info"|"add"|"del" )
+                completions="user group pass"
+                ;;
+            "-u"|"promote"|"demote" )
+                completions=$(passman list user)
+                ;;
+            "user"|"group"|"pass" )
+                completions=$(passman list "$prev")
+                ;;
+        esac
     fi
-    
+
     COMPREPLY=($(compgen -W "${completions}" -- "${cur}"))
     return 0
 }
