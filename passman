@@ -27,9 +27,11 @@ then
     then
         touch "$HOME"/.passman_history
         export RLWRAP_RUNNING=1
-        exec rlwrap -C passman \
-            -z ./completion.pm \
-            "$realbin" "$@"
+        exec rlwrap \
+             --command-name passman \
+             --break-chars '' \
+             --filter ./completion.pm \
+             "$realbin" "$@"
     else
         exec sudo -u "$APPUSER" "$realbin" "$@"
     fi
