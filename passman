@@ -23,18 +23,7 @@ EDITOR="${EDITOR:-editor}"
 
 if [ ! "$(id -un)" = "$APPUSER" ]
 then
-    if which rlwrap >/dev/null && [ -z "$RLWRAP_RUNNING" ]
-    then
-        touch "$HOME"/.passman_history
-        export RLWRAP_RUNNING=1
-        exec rlwrap \
-             --command-name passman \
-             --break-chars '' \
-             --filter ./completion.pm \
-             "$realbin" "$@"
-    else
-        exec sudo -u "$APPUSER" "$realbin" "$@"
-    fi
+    exec sudo -u "$APPUSER" "$realbin" "$@"
 fi
 
 
